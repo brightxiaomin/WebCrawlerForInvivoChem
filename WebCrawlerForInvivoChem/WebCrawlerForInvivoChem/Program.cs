@@ -181,20 +181,38 @@ namespace Abot.Demo
                 Regex rgxForPrice = new Regex(patternForPrice, RegexOptions.IgnoreCase);
                 MatchCollection matchesForPrice = rgxForPrice.Matches(content);
 
-                string filePath = @"C:\Users\mxiao\Documents\webCrawlwer.csv";
-                //string filePath = @"C:\Users\mxiao\Documents\test2.html";
-                var csv = new StringBuilder();
-                string entry = matchCatalog.Value + "," + matchCas.Value + "," + matchProductName.Value;
+               
+                string filePathCSV = @"C:\Users\mxiao\Documents\Product.csv";
+                string filePathTXT = @"C:\Users\mxiao\Documents\Product.txt";
+                string filePathSQL = @"C:\Users\mxiao\Documents\invivochem.sql";
 
+                string entryCSV = matchCatalog.Value + "," + matchCas.Value + "," + matchProductName.Value;
+                string sqlEntry = "INSERT INTO dbo.Product (CatalogNumber, CASNumber, Name) VALUES('" + matchCatalog.Value + "', '" + matchCas.Value + "', '" + matchProductName.Value + "')" + "\n";
+                
                 int count = matchesForPrice.Count;
+
+                string priceForCSV = "";
+                string priceForSQL = "";
+                string amountForCSV = "";
+                string amountForSQL = "";
+               
 
                 for (int i = 0; i < count; i++)
                 {
-                    entry += "," + matchesForPrice[i].Value.Replace(",", "").Replace("&#36;", "$") + "/" + matchesForQuantity[i].Value;
+                    priceForCSV = matchesForPrice[i].Value.Replace(",", "").Replace("&#36;", "$");
+                    priceForSQL = priceForCSV.Replace("$", "");
+                    amountForCSV = matchesForQuantity[i].Value;
+                    amountForSQL = amountForCSV.Replace("mg", "").Replace("g", "");
+                    entryCSV += "," + priceForCSV + "/" + amountForCSV;
+                    sqlEntry += "INSERT INTO dbo.Price (CASNumber, Price, Amount) VALUES('" + matchCas.Value + "'," + priceForSQL + "," + amountForSQL + ")" + "\n";
                 }
 
-                csv.AppendLine(entry);
-                File.AppendAllText(filePath, csv.ToString());
+                entryCSV += "\n";
+                sqlEntry += "\n";
+
+                File.AppendAllText(filePathCSV, entryCSV);
+                File.AppendAllText(filePathTXT, entryCSV);
+                File.AppendAllText(filePathSQL, sqlEntry);
 
                 //File.WriteAllText(filePath, content);
             }
