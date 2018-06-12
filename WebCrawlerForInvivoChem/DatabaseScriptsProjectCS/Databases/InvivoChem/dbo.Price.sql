@@ -5,7 +5,7 @@
 	[Amount]                   INT           NOT NULL,
     [Created]                  DATETIME      CONSTRAINT [DF_Price_Created] DEFAULT (getutcdate()) NOT NULL,
     [Modified]                 DATETIME      CONSTRAINT [DF_Price_Modified] DEFAULT (getutcdate()) NOT NULL,
-    CONSTRAINT [PK_Price] PRIMARY KEY CLUSTERED ([Id] ASC) WITH (FILLFACTOR = 90)
+    CONSTRAINT [PK_Price] PRIMARY KEY NONCLUSTERED ([Id] ASC) WITH (FILLFACTOR = 90)
 );
 
 

@@ -11,7 +11,7 @@
 	[ProductType]			   VARCHAR (32)  NULL,
     [Created]                  DATETIME      CONSTRAINT [DF_Product_Created] DEFAULT (getutcdate()) NOT NULL,
     [Modified]                 DATETIME      CONSTRAINT [DF_Product_Modified] DEFAULT (getutcdate()) NOT NULL,
-    CONSTRAINT [PK_Product] PRIMARY KEY CLUSTERED ([Id] ASC) WITH (FILLFACTOR = 90)
+    CONSTRAINT [PK_Product] PRIMARY KEY NONCLUSTERED ([Id] ASC) WITH (FILLFACTOR = 90)
 );
 
 
