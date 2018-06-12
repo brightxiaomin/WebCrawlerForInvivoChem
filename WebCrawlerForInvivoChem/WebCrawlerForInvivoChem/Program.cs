@@ -16,11 +16,13 @@ namespace Abot.Demo
             log4net.Config.XmlConfigurator.Configure();
             PrintDisclaimer();
 
-            Uri uriToCrawl = new Uri("http://www.invivochem.com/abt-737/");
+            Uri uriToCrawl = new Uri("http://www.invivochem.com/");
 
             //http://www.invivochem.com/venetoclax-abt-199-or-gdc-0199/
 
             //http://www.invivochem.com/abt-737/
+            //http://www.invivochem.com/abt-737/
+            //https://www.invivochem.com/melk-8a/
 
             IWebCrawler crawler;
 
@@ -159,17 +161,20 @@ namespace Abot.Demo
             CrawledPage crawledPage = e.CrawledPage;
             string content = crawledPage.Content.Text;
 
-            string patternForCatalogNumber = "(?<=Cat #: )([A-Za-z0-9]{1,5})"; 
+            //string filePathHtml = @"C:\Users\mxiao\Documents\debug.html";
+            //File.WriteAllText(filePathHtml, content);
+
+            string patternForCatalogNumber = @"(?<=Cat #:\s?)([A-Za-z0-9]{1,5})"; 
             Regex rgxForCatalogNumber = new Regex(patternForCatalogNumber, RegexOptions.IgnoreCase);
             Match matchCatalog = rgxForCatalogNumber.Match(content); 
 
             if(matchCatalog.Success)
             {
-                string patternForCasNumber = "(?<=Cas #: )([A-Za-z0-9-]{5,12})";
+                string patternForCasNumber = @"(?<=Cas\s?#:\s?)([0-9-]{5,12})";
                 Regex rgxForCasNumber = new Regex(patternForCasNumber, RegexOptions.IgnoreCase);
                 Match matchCas = rgxForCasNumber.Match(content);
 
-                string patternForProductName = @"(?<=Description: )([\w-]+)";
+                string patternForProductName = @"(?<=Description:\s*)([\w-]+)";
                 Regex rgxForProductName = new Regex(patternForProductName, RegexOptions.IgnoreCase);
                 Match matchProductName = rgxForProductName.Match(content);
 
@@ -177,26 +182,43 @@ namespace Abot.Demo
                 Regex rgxForQuantity = new Regex(patternForQuantity, RegexOptions.IgnoreCase);
                 MatchCollection matchesForQuantity = rgxForQuantity.Matches(content);
 
-                string patternForPrice = @"(\$|&#36;)[\d,]{2,6}"; ;
+                string patternForPrice = "(?<=\"ptp-price\">)(\\$|&#36;)[\\d,]{2,6}"; 
                 Regex rgxForPrice = new Regex(patternForPrice, RegexOptions.IgnoreCase);
                 MatchCollection matchesForPrice = rgxForPrice.Matches(content);
 
-                string filePath = @"C:\Users\mxiao\Documents\webCrawlwer.csv";
-                //string filePath = @"C:\Users\mxiao\Documents\test2.html";
-                var csv = new StringBuilder();
-                string entry = matchCatalog.Value + "," + matchCas.Value + "," + matchProductName.Value;
-
-                int count = matchesForPrice.Count;
-
-                for (int i = 0; i < count; i++)
+                if(matchCas.Success && matchProductName.Success)
                 {
-                    entry += "," + matchesForPrice[i].Value.Replace(",", "").Replace("&#36;", "$") + "/" + matchesForQuantity[i].Value;
+                    string filePathCSV = @"C:\Users\mxiao\Documents\Product.csv";
+                    string filePathTXT = @"C:\Users\mxiao\Documents\Product.txt";
+                    string filePathSQL = @"C:\Users\mxiao\Documents\invivochem.sql";
+
+                    string entryCSV = matchCatalog.Value + "," + matchCas.Value + "," + matchProductName.Value;
+                    string sqlEntry = "INSERT INTO dbo.Product (CatalogNumber, CASNumber, Name) VALUES('" + matchCatalog.Value + "', '" + matchCas.Value + "', '" + matchProductName.Value + "')" + "\n";
+
+                    int count = Math.Min(matchesForPrice.Count, matchesForQuantity.Count);
+
+                    string priceForCSV = "";
+                    string priceForSQL = "";
+                    string amountForCSV = "";
+                    string amountForSQL = "";
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        priceForCSV = matchesForPrice[i].Value.Replace(",", "").Replace("&#36;", "$");
+                        priceForSQL = priceForCSV.Replace("$", "");
+                        amountForCSV = matchesForQuantity[i].Value;
+                        amountForSQL = amountForCSV.Replace("mg", "").Replace("g", "000");
+                        entryCSV += "," + priceForCSV + "/" + amountForCSV;
+                        sqlEntry += "INSERT INTO dbo.Price (CASNumber, Price, Amount) VALUES('" + matchCas.Value + "'," + priceForSQL + "," + amountForSQL + ")" + "\n";
+                    }
+
+                    entryCSV += "\n";
+                    sqlEntry += "\n";
+
+                    File.AppendAllText(filePathCSV, entryCSV);
+                    File.AppendAllText(filePathTXT, entryCSV);
+                    File.AppendAllText(filePathSQL, sqlEntry);
                 }
-
-                csv.AppendLine(entry);
-                File.AppendAllText(filePath, csv.ToString());
-
-                //File.WriteAllText(filePath, content);
             }
         }
 
