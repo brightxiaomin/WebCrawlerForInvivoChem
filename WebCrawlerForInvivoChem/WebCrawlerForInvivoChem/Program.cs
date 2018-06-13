@@ -6,28 +6,35 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections;
+using System.Threading;
 
 namespace Abot.Demo
 {
     class Program
     {
+        static ReaderWriterLock rwl = new ReaderWriterLock();
+        static int writes = 0;
+        static int writerTimeouts = 0;
+
         static void Main(string[] args)
         {
             log4net.Config.XmlConfigurator.Configure();
             PrintDisclaimer();
 
-            Uri uriToCrawl = new Uri("https://www.invivochem.com");
+            Uri uriToCrawl = new Uri("http://www.selleckchem.com/products/z-devd-fmk.html");
 
             //http://www.invivochem.com/venetoclax-abt-199-or-gdc-0199/
 
             //http://www.invivochem.com/abt-737/
             //http://www.invivochem.com/abt-737/
             //https://www.invivochem.com/melk-8a/
+            //http://www.selleckchem.com/allproducts.jsp
 
             IWebCrawler crawler;
 
             //Uncomment only one of the following to see that instance in action
-            crawler = GetCustomBehaviorUsingLambdaWebCrawler();
+            crawler = GetDefaultWebCrawler();
+
             //crawler = GetManuallyConfiguredWebCrawler();
             //crawler = GetCustomBehaviorUsingLambdaWebCrawler();
 
@@ -93,7 +100,7 @@ namespace Abot.Demo
                 if (uri.Contains("wp-content") || uri.Contains("abt-333") || uri.Contains("pyrrolidinedithi%E") || uri.Contains("ots514hcl"))
                     return new CrawlDecision { Allow = false, Reason = "Scared of ghosts" };
 
-                if(uri.Contains("invivochem.com"))
+                if (uri.Contains("invivochem.com"))
                     return new CrawlDecision { Allow = true };
 
                 return new CrawlDecision { Allow = false };
@@ -165,14 +172,14 @@ namespace Abot.Demo
             CrawledPage crawledPage = e.CrawledPage;
             string content = crawledPage.Content.Text;
 
-            //string filePathHtml = @"C:\Users\mxiao\Documents\debug.html";
-            //File.WriteAllText(filePathHtml, content);
+            string filePathHtml = @"C:\Users\mxiao\Documents\selleckchem.html";
+            File.WriteAllText(filePathHtml, content);
 
-            string patternForCatalogNumber = @"(?<=Cat #:\s?)([A-Za-z0-9]{1,5})"; 
+            string patternForCatalogNumber = @"(?<=Cat #:\s?)([A-Za-z0-9]{1,5})";
             Regex rgxForCatalogNumber = new Regex(patternForCatalogNumber, RegexOptions.IgnoreCase);
-            Match matchCatalog = rgxForCatalogNumber.Match(content); 
+            Match matchCatalog = rgxForCatalogNumber.Match(content);
 
-            if(matchCatalog.Success)
+            if (matchCatalog.Success)
             {
                 string patternForCasNumber = @"(?<=Cas\s?#:\s?)([0-9-]{5,12})";
                 Regex rgxForCasNumber = new Regex(patternForCasNumber, RegexOptions.IgnoreCase);
@@ -186,11 +193,11 @@ namespace Abot.Demo
                 Regex rgxForQuantity = new Regex(patternForQuantity, RegexOptions.IgnoreCase);
                 MatchCollection matchesForQuantity = rgxForQuantity.Matches(content);
 
-                string patternForPrice = "(?<=\"ptp-price\">)(\\$|&#36;)[\\d,]{2,6}"; 
+                string patternForPrice = "(?<=\"ptp-price\">)(\\$|&#36;)[\\d,]{2,6}";
                 Regex rgxForPrice = new Regex(patternForPrice, RegexOptions.IgnoreCase);
                 MatchCollection matchesForPrice = rgxForPrice.Matches(content);
 
-                if(matchCas.Success && matchProductName.Success)
+                if (matchCas.Success && matchProductName.Success)
                 {
                     string filePathCSV = @"C:\Users\mxiao\Documents\Product.csv";
                     string filePathTXT = @"C:\Users\mxiao\Documents\Product.txt";
@@ -218,10 +225,29 @@ namespace Abot.Demo
 
                     entryCSV += "\n";
                     sqlEntry += "\n";
+                    try
+                    {
+                        rwl.AcquireWriterLock(100);
+                        try
+                        {
+                            //Write To File
+                            File.AppendAllText(filePathCSV, entryCSV);
+                            File.AppendAllText(filePathTXT, entryCSV);
+                            File.AppendAllText(filePathSQL, sqlEntry);
+                            Interlocked.Increment(ref writes);
+                        }
+                        finally
+                        {
+                            // Ensure that the lock is released.
+                            rwl.ReleaseWriterLock();
+                        }
+                    }
+                    catch (ApplicationException)
+                    {
+                        // The writer lock request timed out.
+                        Interlocked.Increment(ref writerTimeouts);
+                    }
 
-                    File.AppendAllText(filePathCSV, entryCSV);
-                    File.AppendAllText(filePathTXT, entryCSV);
-                    File.AppendAllText(filePathSQL, sqlEntry);
                 }
             }
         }
