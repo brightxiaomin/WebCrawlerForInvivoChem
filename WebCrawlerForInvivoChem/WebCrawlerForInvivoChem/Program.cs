@@ -16,7 +16,7 @@ namespace Abot.Demo
             log4net.Config.XmlConfigurator.Configure();
             PrintDisclaimer();
 
-            Uri uriToCrawl = new Uri("http://www.invivochem.com/");
+            Uri uriToCrawl = new Uri("https://www.invivochem.com");
 
             //http://www.invivochem.com/venetoclax-abt-199-or-gdc-0199/
 
@@ -27,7 +27,7 @@ namespace Abot.Demo
             IWebCrawler crawler;
 
             //Uncomment only one of the following to see that instance in action
-            crawler = GetDefaultWebCrawler();
+            crawler = GetCustomBehaviorUsingLambdaWebCrawler();
             //crawler = GetManuallyConfiguredWebCrawler();
             //crawler = GetCustomBehaviorUsingLambdaWebCrawler();
 
@@ -89,32 +89,36 @@ namespace Abot.Demo
             //NOTE: This is lambda is run after the regular ICrawlDecsionMaker.ShouldCrawlPage method is run.
             crawler.ShouldCrawlPage((pageToCrawl, crawlContext) =>
             {
-                if (pageToCrawl.Uri.AbsoluteUri.Contains("ghost"))
+                string uri = pageToCrawl.Uri.AbsoluteUri;
+                if (uri.Contains("wp-content") || uri.Contains("abt-333") || uri.Contains("pyrrolidinedithi%E") || uri.Contains("ots514hcl"))
                     return new CrawlDecision { Allow = false, Reason = "Scared of ghosts" };
 
-                return new CrawlDecision { Allow = true };
+                if(uri.Contains("invivochem.com"))
+                    return new CrawlDecision { Allow = true };
+
+                return new CrawlDecision { Allow = false };
             });
 
             //Register a lambda expression that will tell Abot to not download the page content for any page after 5th.
             //Abot will still make the http request but will not read the raw content from the stream
             //NOTE: This lambda is run after the regular ICrawlDecsionMaker.ShouldDownloadPageContent method is run
-            crawler.ShouldDownloadPageContent((crawledPage, crawlContext) =>
-            {
-                if (crawlContext.CrawledCount >= 5)
-                    return new CrawlDecision { Allow = false, Reason = "We already downloaded the raw page content for 5 pages" };
+            //crawler.ShouldDownloadPageContent((crawledPage, crawlContext) =>
+            //{
+            //    if (crawlContext.CrawledCount >= 5)
+            //        return new CrawlDecision { Allow = false, Reason = "We already downloaded the raw page content for 5 pages" };
 
-                return new CrawlDecision { Allow = true };
-            });
+            //    return new CrawlDecision { Allow = true };
+            //});
 
             //Register a lambda expression that will tell Abot to not crawl links on any page that is not internal to the root uri.
             //NOTE: This lambda is run after the regular ICrawlDecsionMaker.ShouldCrawlPageLinks method is run
-            crawler.ShouldCrawlPageLinks((crawledPage, crawlContext) =>
-            {
-                if (!crawledPage.IsInternal)
-                    return new CrawlDecision { Allow = false, Reason = "We dont crawl links of external pages" };
+            //crawler.ShouldCrawlPageLinks((crawledPage, crawlContext) =>
+            //{
+            //    if (!crawledPage.IsInternal)
+            //        return new CrawlDecision { Allow = false, Reason = "We dont crawl links of external pages" };
 
-                return new CrawlDecision { Allow = true };
-            });
+            //    return new CrawlDecision { Allow = true };
+            //});
 
             return crawler;
         }
