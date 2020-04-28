@@ -22,20 +22,20 @@ namespace Abot.Demo
             PrintDisclaimer();
 
             #region InvivoChem
-            //Uri uriToCrawl = new Uri("https://www.invivochem.com/");
+            Uri uriToCrawl = new Uri("https://www.invivochem.com/all-products/");
             //http://www.invivochem.com/venetoclax-abt-199-or-gdc-0199/
             //http://www.invivochem.com/abt-737/
             //http://www.invivochem.com/a-1210477/
-            //IWebCrawler crawler;
+            IWebCrawler crawler;
             //Uncomment only one of the following to see that instance in action
             //crawler = GetDefaultWebCrawler();
             //crawler = GetManuallyConfiguredWebCrawler();
-            //crawler = GetCustomBehaviorUsingLambdaWebCrawler();
+            crawler = GetCustomBehaviorUsingLambdaWebCrawler();
 
             //Subscribe to any of these asynchronous events, there are also sychronous versions of each.
             //This is where you process data about specific events of the crawl
             //crawler.PageCrawlStartingAsync += Crawler_ProcessPageCrawlStarting;
-            //crawler.PageCrawlCompletedAsync += Crawler_ProcessPageCrawlCompleted;
+            crawler.PageCrawlCompletedAsync += Crawler_ProcessPageCrawlCompleted;
             //crawler.PageCrawlDisallowedAsync += Crawler_PageCrawlDisallowed;
             //crawler.PageLinksCrawlDisallowedAsync += Crawler_PageLinksCrawlDisallowed;
             #endregion
@@ -54,14 +54,14 @@ namespace Abot.Demo
 
             #region MedKoo
             ////ABOUT 50 * 342 PRODUCTS, ABOUT 15000
-            Uri uriToCrawl = new Uri("https://www.medkoo.com/products");
-            //https://www.medkoo.com/products/33278
-            //https://www.medkoo.com/products
-            //26745
+            //Uri uriToCrawl = new Uri("https://www.medkoo.com/products");
+            ////https://www.medkoo.com/products/33278
+            ////https://www.medkoo.com/products
+            ////26745
 
-            IWebCrawler crawler;
-            crawler = GetCustomWebCrawlerForMedkoo();
-            crawler.PageCrawlCompletedAsync += Crawler_ProcessPageCrawlCompletedMedkoo;
+            //IWebCrawler crawler;
+            //crawler = GetCustomWebCrawlerForMedkoo();
+            //crawler.PageCrawlCompletedAsync += Crawler_ProcessPageCrawlCompletedMedkoo;
             #endregion
 
 
